@@ -20,7 +20,7 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR3YXF2bmZ1ZmJucnh6eXBvd2J6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1NDM3MjEsImV4cCI6MjA1ODExOTcyMX0.CaFI95T5q2wwiWapxSfbXlX4PMAEvqU29ttXDalHvDE',
   );
 
-  Stripe.publishableKey = 'YOUR_STRIPE_PUBLISHABLE_KEY';
+  Stripe.publishableKey = 'pk_test_51R55AaDORmFWPQ5Qlfc3YwcQJicPMOA96nwcmRDhr10nFcj2UcaG00TRGGtq5VXG2HApMpcIlyjSFUdFVUrA8zCj00SG49nt5O';
 
 
 

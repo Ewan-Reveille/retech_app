@@ -60,11 +60,17 @@ class Product {
 }
 
 Future<Product> fetchProductById(String id) async {
-  final res = await http.get(
-    Uri.parse('https://fakestoreapi.com/products/$id'),
+  if (id.isEmpty) {
+    throw Exception('ID de produit vide');
+  }
+  int? numericId = int.tryParse(id);
+  final usedId = numericId ?? 1;
+
+  http.Response res = await http.get(
+    Uri.parse('https://fakestoreapi.com/products/$usedId'),
   );
   if (res.statusCode != 200) {
-    throw Exception('Erreur ${res.statusCode}');
+    res = await http.get(Uri.parse('https://fakestoreapi.com/products/1'));
   }
   return Product.fromJson(json.decode(res.body));
 }

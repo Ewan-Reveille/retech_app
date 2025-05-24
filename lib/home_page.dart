@@ -11,15 +11,18 @@ class HomePage extends StatefulWidget {
 }
 
 class Product {
+  final String id;
+  // final int id;
   final String title;
-  final String image;
+  final List<ProductImage> images;
   final double price;
   final String description;
   final String category;
 
   Product({
+    required this.id,
     required this.title,
-    required this.image,
+    required this.images,
     required this.price,
     required this.description,
     required this.category,
@@ -27,11 +30,31 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
+      id: json['ID'] as String,
+      // id: json['id'] as int,
       title: json['title'],
-      image: json['image'],
+      images:
+          (json['images'] as List<dynamic>)
+              .map((imgJson) => ProductImage.fromJson(imgJson))
+              .toList(), // <-- Parse des images
       price: (json['price'] as num).toDouble(),
-      description: json['description'],
-      category: json['category'],
+      description: json['description'] as String? ?? '',
+      category: json['category'] as String? ?? '',
+    );
+  }
+}
+
+class ProductImage {
+  final String id;
+  final String imageUrl;
+
+  ProductImage({required this.id, required this.imageUrl});
+
+  factory ProductImage.fromJson(Map<String, dynamic> json) {
+    final baseUrl = 'http://185.98.136.156:8080/';
+    return ProductImage(
+      id: json['ID'] as String,
+      imageUrl: baseUrl + (json['ImageURL'] as String),
     );
   }
 }
@@ -52,15 +75,36 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _fetchProducts() async {
     final response = await http.get(
-      Uri.parse('https://fakestoreapi.com/products'),
+      Uri.parse('http://185.98.136.156:8080/products'),
     );
     if (response.statusCode == 200) {
+      print('Réponse brute : ${response.body}');
+      final decodedBody = utf8.decode(response.bodyBytes);
       final List<dynamic> productJson = json.decode(response.body);
+      print('Données décodées : $productJson');
+
       setState(() {
         _products =
             productJson.map((jsonItem) => Product.fromJson(jsonItem)).toList();
+            
         _filteredProducts = _products;
-        _brands = _products.map((product) => product.category).toSet().toList();
+        _brands = [
+          'Logitech',
+          'Sony',
+          'Nokia',
+          'Apple',
+          'Samsung',
+          'Asus',
+          'LG',
+          'Razer',
+          'Microsoft',
+          'Bose',
+          'JBL',
+          'Canon',
+          'Nikon',
+          'HP',
+          'Dell',
+        ];
         _isLoading = false;
       });
     } else {
@@ -180,129 +224,155 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildProductCard(Product product) {
+  Widget _buildProductCard(BuildContext context, Product product) {
     // Using the provided _buildProductCard widget
-    return Container(
-      width: 159, // This width might be overridden by carousel's viewport logic
-      // height: 225, // Height is managed by CarouselOptions.height for the overall carousel
-      margin: const EdgeInsets.symmetric(
-        horizontal: 6.0,
-        vertical: 8.0,
-      ), // Adjusted margin slightly
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.stretch, // Ensure children fill width
-        children: [
-          // Image area
-          Expanded(
-            // Use Expanded to allow image to take available vertical space
-            flex: 3, // Adjust flex factor as needed
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8.0, left: 8.0, right: 8.0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  product.image,
-                  fit:
-                      BoxFit
-                          .cover, // Cover ensures the image fills the space, might crop
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: Colors.grey[200],
-                      child: Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          color: Colors.grey[400],
-                          size: 40,
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).pushNamed('/product/:id', arguments: product.id);
+      },
+      child: Container(
+        width:
+            159, // This width might be overridden by carousel's viewport logic
+        // height: 225, // Height is managed by CarouselOptions.height for the overall carousel
+        margin: const EdgeInsets.symmetric(
+          horizontal: 6.0,
+          vertical: 8.0,
+        ), // Adjusted margin slightly
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment:
+              CrossAxisAlignment.stretch, // Ensure children fill width
+          children: [
+            // Image area
+            Expanded(
+              // Use Expanded to allow image to take available vertical space
+              flex: 3, // Adjust flex factor as needed
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8.0, left: 8.0, right: 8.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    product.images.isNotEmpty 
+                      ? product.images[0].imageUrl 
+                      : 'https://via.placeholder.com/150',
+
+                    fit:
+                        BoxFit
+                            .cover, // Cover ensures the image fills the space, might crop
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.grey[200],
+                        child: Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.grey[400],
+                            size: 40,
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Text section
-          Expanded(
-            // Use Expanded for text section as well
-            flex: 2, // Adjust flex factor as needed
-            child: Padding(
-              padding: const EdgeInsets.all(10), // Uniform padding
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment:
-                    MainAxisAlignment
-                        .end, // Push text to bottom of its allocated space
-                children: [
-                  // Price + title on one line
-                  Row(
-                    children: [
-                      Text(
-                        '\$${product.price.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          product.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+            // Text section
+            Expanded(
+              // Use Expanded for text section as well
+              flex: 2, // Adjust flex factor as needed
+              child: Padding(
+                padding: const EdgeInsets.all(10), // Uniform padding
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment:
+                      MainAxisAlignment
+                          .end, // Push text to bottom of its allocated space
+                  children: [
+                    // Price + title on one line
+                    Row(
+                      children: [
+                        Text(
+                          '\$${product.price.toStringAsFixed(2)}',
                           style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  // Optional: Second line for brand/storage
-                  // if ((product.brand ?? '').isNotEmpty ||
-                  //     (product.storage ?? '').isNotEmpty) ...[
-                  //   const SizedBox(height: 2),
-                  //   Text(
-                  //     [
-                  //       if (product.brand?.isNotEmpty == true) product.brand!,
-                  //       if (product.storage?.isNotEmpty == true) product.storage!
-                  //     ].join(' • '),
-                  //     maxLines: 1,
-                  //     overflow: TextOverflow.ellipsis,
-                  //     style: TextStyle(
-                  //       fontSize: 10,
-                  //       color: Colors.grey[700],
-                  //     ),
-                  //   ),
-                  // ],
-                ],
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            product.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBrandButton(String brand) {
-    return GlassContainer(
-      blur: 10,
-      linearGradient: LinearGradient(colors: [Colors.white, Colors.white]),
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-        child: Text(brand, style: TextStyle(color: Colors.white)),
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 8), // Horizontal spacing
+      constraints: BoxConstraints(
+        minWidth: 120, // Minimum width for all items
+        maxWidth: 120, // Maximum width for all items
+      ),
+      child: GlassContainer(
+        blur: 20,
+        borderRadius: BorderRadius.circular(24),
+        linearGradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+          child: Center(
+            child: Text(
+              brand,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -326,7 +396,7 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           _currentIndex = index;
         });
-      debugPrint('→ Navigating to ${_routes[index]}');
+        debugPrint('→ Navigating to ${_routes[index]}');
         Navigator.pushNamed(context, _routes[index]);
       },
       items: [
@@ -386,9 +456,12 @@ class _HomePageState extends State<HomePage> {
                     if (_filteredProducts.isNotEmpty)
                       CarouselSlider(
                         items:
-                            _filteredProducts
-                                .map((product) => _buildProductCard(product))
-                                .toList(),
+                            _filteredProducts.map((product) {
+                              return _buildProductCard(
+                                context,
+                                product,
+                              );
+                            }).toList(),
                         options: CarouselOptions(
                           height: 250,
                           autoPlay: true,
@@ -431,20 +504,19 @@ class _HomePageState extends State<HomePage> {
                                 .map((brand) => _buildBrandButton(brand))
                                 .toList(),
                         options: CarouselOptions(
-                          height: 60,
+                          height: 40,
                           autoPlay: true,
-                          // Set interval equal to animation duration for continuous scroll
-                          autoPlayInterval: Duration(
-                            milliseconds: 1500,
-                          ), // How long each item stays visible
+                          autoPlayInterval: Duration(milliseconds: 1500),
                           autoPlayAnimationDuration: Duration(
                             milliseconds: 500,
-                          ), // Speed of transition
-                          autoPlayCurve: Curves.linear, // Constant speed
-                          viewportFraction:
-                              0.3, // Shows 4 brand items (1.0 / 0.25 = 4)
-                          // Adjust as needed, e.g., 0.2 for 5 items
-                          // reverse: true, // Kept as per original code
+                          ),
+                          autoPlayCurve: Curves.linear,
+                          viewportFraction: 0.24,
+                          // Add these parameters for consistent spacing:
+                          enableInfiniteScroll: true,
+                          padEnds: false,
+                          disableCenter: true,
+                          pageSnapping: false,
                         ),
                       )
                     else
@@ -456,7 +528,7 @@ class _HomePageState extends State<HomePage> {
                         child: Center(
                           child: Text(
                             'Aucune marque disponible.',
-                            style: TextStyle(color: Colors.white, fontSize: 16),
+                            style: TextStyle(color: Colors.black, fontSize: 16),
                           ),
                         ),
                       ),

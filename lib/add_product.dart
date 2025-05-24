@@ -2,6 +2,23 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class Category {
+  final String id;
+  final String name;
+
+  Category({required this.id, required this.name});
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      id: json['ID'] as String, // ou 'id' selon ton JSON
+      name: json['Name'] as String, // ou 'name'
+    );
+  }
+}
 
 class AddProductPage extends StatefulWidget {
   @override
@@ -18,18 +35,44 @@ class _AddProductPageState extends State<AddProductPage> {
   final TextEditingController _capacityController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
 
-  String? _selectedCategory;
-  final List<String> _categories = [
-    'Électronique',
-    'Vêtements',
-    'Maison',
-    'Autres',
-  ];
+  List<Category> _categories = [];
+  String? _selectedCategoryId;
+  bool _loadingCategories = true;
 
-  final List<Color> _gradientColors = [
-    Color(0xFF6A11CB),
-    Color(0xFF2575FC),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories();
+  }
+
+  Future<void> _fetchCategories() async {
+    final uri = Uri.parse('http://185.98.136.156:8080/categories');
+    try {
+      final res = await http.get(
+        uri,
+        headers: {'Accept-Charset': 'utf-8'}, // Ajoutez ce header
+      );
+      if (res.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(utf8.decode(res.bodyBytes));
+        setState(() {
+          _categories =
+              data
+                  .map(
+                    (json) => Category.fromJson(json as Map<String, dynamic>),
+                  )
+                  .toList();
+          _loadingCategories = false;
+        });
+      } else {
+        throw Exception('Erreur ${res.statusCode}');
+      }
+    } catch (e) {
+      setState(() => _loadingCategories = false);
+      // Gère l’erreur ici (Snackbar, log…)
+    }
+  }
+
+  final List<Color> _gradientColors = [Color(0xFF6A11CB), Color(0xFF2575FC)];
 
   Future<void> _pickImages() async {
     final picked = await _picker.pickMultiImage(imageQuality: 80);
@@ -45,28 +88,36 @@ class _AddProductPageState extends State<AddProductPage> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final uri = Uri.parse('http://185.98.136.156/products');
+    final uri = Uri.parse('http://185.98.136.156:8080/products');
     final request = http.MultipartRequest('POST', uri);
+
+    final prefs = await SharedPreferences.getInstance();
+    final username = prefs.getString('user_username');
+
+    // request.headers['Content-Type'] = 'multipart/form-data';
+    if (username != null) {
+      request.headers['X-User-Username'] = username;
+    }
 
     request.fields['title'] = _titleController.text;
     request.fields['description'] = _descController.text;
-    request.fields['category'] = _selectedCategory!;
+    request.fields['category'] = _selectedCategoryId!;
     request.fields['capacity'] = _capacityController.text;
     request.fields['price'] = _priceController.text;
 
     for (var file in _images) {
-      request.files.add(
-        await http.MultipartFile.fromPath('images', file.path),
-      );
+      request.files.add(await http.MultipartFile.fromPath('images', file.path));
     }
 
     final response = await request.send();
     final success = response.statusCode == 200 || response.statusCode == 201;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(success
-            ? 'Produit ajouté avec succès!'
-            : 'Erreur lors de l\'ajout du produit.'),
+        content: Text(
+          success
+              ? 'Produit ajouté avec succès!'
+              : 'Erreur lors de l\'ajout du produit.',
+        ),
       ),
     );
     if (success) Navigator.of(context).pop();
@@ -178,33 +229,48 @@ class _AddProductPageState extends State<AddProductPage> {
                     ),
                   ),
                   SizedBox(height: 16),
-                  _buildTextField(_titleController, 'Ex : Iphone 16 Pro'),
+                  _buildTextField(label: "Titre", _titleController, 'Ex : Iphone 16 Pro'),
                   SizedBox(height: 12),
                   _buildTextField(
+                    label: "Décris ton article",
                     _descController,
                     'Ex : L’état, date de l’achat, garanties etc…',
                     maxLines: 3,
                   ),
                   SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: _selectedCategory,
+                    value: _selectedCategoryId,
                     dropdownColor: Colors.white,
                     decoration: _inputDecoration('Catégorie de l’article…'),
                     hint: Text('Catégorie de l’article…'),
-                    items: _categories
-                        .map((cat) => DropdownMenuItem(
-                              value: cat,
-                              child: Text(cat),
-                            ))
-                        .toList(),
-                    onChanged: (val) => setState(() => _selectedCategory = val),
-                    validator: (val) =>
-                        val == null ? 'Veuillez sélectionner une catégorie' : null,
+                    items:
+                        _categories
+                            .map(
+                              (cat) => DropdownMenuItem(
+                                value: cat.id,
+                                child: Text(
+                                  cat.name,
+                                  style: GoogleFonts.notoSans(
+                                    // Police qui supporte bien le français
+                                    textStyle: TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                    onChanged:
+                        (val) => setState(() => _selectedCategoryId = val),
+                    validator:
+                        (val) =>
+                            val == null
+                                ? 'Veuillez sélectionner une catégorie'
+                                : null,
                   ),
                   SizedBox(height: 12),
-                  _buildTextField(_capacityController, 'Ex : 256 GB'),
+                  _buildTextField(label: "Capacité", _capacityController, 'Ex : 256 GB'),
                   SizedBox(height: 12),
                   _buildTextField(
+                    label: "Prix sans frais de port",
                     _priceController,
                     'Prix',
                     keyboardType: TextInputType.number,
@@ -220,10 +286,7 @@ class _AddProductPageState extends State<AddProductPage> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: Text(
-                      'Publiez',
-                      style: TextStyle(fontSize: 18),
-                    ),
+                    child: Text('Publiez', style: TextStyle(fontSize: 18)),
                   ),
                 ],
               ),
@@ -234,12 +297,14 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(String hint, {String? label}) {
     return InputDecoration(
+      labelText: label,
       hintText: hint,
       fillColor: Colors.white.withOpacity(0.2),
       filled: true,
       hintStyle: TextStyle(color: Colors.white70),
+      labelStyle: TextStyle(color: Colors.white), // Label text style
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -250,6 +315,7 @@ class _AddProductPageState extends State<AddProductPage> {
   Widget _buildTextField(
     TextEditingController controller,
     String hint, {
+    String? label, // New label parameter
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
   }) {
@@ -258,9 +324,13 @@ class _AddProductPageState extends State<AddProductPage> {
       maxLines: maxLines,
       keyboardType: keyboardType,
       style: TextStyle(color: Colors.white),
-      decoration: _inputDecoration(hint),
-      validator: (value) =>
-          value == null || value.isEmpty ? 'Ce champ est requis' : null,
+      decoration: _inputDecoration(
+        hint,
+        label: label,
+      ), // Pass label to decoration
+      validator:
+          (value) =>
+              value == null || value.isEmpty ? 'Ce champ est requis' : null,
     );
   }
 }

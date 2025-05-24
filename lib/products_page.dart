@@ -73,7 +73,6 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // We drop the AppBar and re‑create the gradient header below
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1, // since this is the “search” tab
         selectedItemColor: Colors.white,

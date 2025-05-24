@@ -1,6 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_signin_button/flutter_signin_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -22,22 +25,32 @@ class _LoginPageState extends State<LoginPage> {
       _errorMessage = null;
     });
 
-    try {
-      final supabase = Supabase.instance.client;
-      final identifier = _identifierController.text.trim();
-      final password = _passwordController.text.trim();
+    final identifier = _identifierController.text.trim();
+    final password = _passwordController.text.trim();
 
-      // Sign in using identifier as email
-      await supabase.auth.signInWithPassword(
-        email: identifier,
-        password: password,
+    try {
+      final response = await http.post(
+        Uri.parse('http://185.98.136.156:8080/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': identifier, 'password': password}),
       );
 
-      Navigator.of(context).pushReplacementNamed('/home');
-    } on AuthException catch (error) {
-      setState(() {
-        _errorMessage = error.message;
-      });
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_username', identifier);
+
+        if (data['token'] != null) {
+          await prefs.setString('auth_token', data['token']);
+        }
+
+        Navigator.of(context).pushReplacementNamed('/homepage');
+      } else {
+        final err = jsonDecode(response.body);
+        setState(() {
+          _errorMessage = err['error'] ?? 'Login failed';
+        });
+      }
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -218,6 +231,16 @@ class _LoginPageState extends State<LoginPage> {
                       },
                     ),
                   ],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16, // Adjust this value based on your design
+              left: 16,
+              child: SafeArea(
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),

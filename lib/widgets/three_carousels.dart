@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+final String assetDir = 'assets/images/login';
+
 class ThreeCarousels extends StatefulWidget {
   @override
   _ThreeCarouselsState createState() => _ThreeCarouselsState();
@@ -19,22 +21,23 @@ class _ThreeCarouselsState extends State<ThreeCarousels> {
   Timer? timer2;
   Timer? timer3;
 
-  final List<String> images1 = List.generate(
-    6,
-    (index) => 'https://picsum.photos/seed/carousel1_$index/200/200',
-  );
-  final List<String> images2 = List.generate(
-    5,
-    (index) => 'https://picsum.photos/seed/carousel2_$index/200/200',
-  );
-  final List<String> images3 = List.generate(
-    7,
-    (index) => 'https://picsum.photos/seed/carousel3_$index/200/200',
-  );
+  late final List<String> allImages;
+  late final List<String> images1;
+  late final List<String> images2;
+  late final List<String> images3;
 
   @override
   void initState() {
     super.initState();
+    allImages = List.generate(31, (i) {
+      final name = i == 0 ? 'image.png' : 'image($i).png';
+      return '$assetDir/$name';
+    });
+
+    images1 = allImages.sublist(0, 6);
+    images2 = allImages.sublist(6, 6 + 5);
+    images3 = allImages.sublist(6 + 5, 6 + 5 + 7);
+
     controller1 = ScrollController(initialScrollOffset: 5000);
     controller2 = ScrollController(initialScrollOffset: 5000);
     controller3 = ScrollController(initialScrollOffset: 5000);
@@ -47,15 +50,16 @@ class _ThreeCarouselsState extends State<ThreeCarousels> {
   Timer autoScroll(ScrollController controller, {int direction = 1}) {
     return Timer.periodic(const Duration(milliseconds: 30), (_) {
       if (controller.hasClients) {
-        controller.jumpTo(
-          controller.offset + direction * 0.8,
-        );
+        controller.jumpTo(controller.offset + direction * 0.8);
       }
     });
   }
 
   Widget buildInfiniteCarousel(
-      List<String> images, ScrollController controller, bool offsetHalfImage) {
+    List<String> images,
+    ScrollController controller,
+    bool offsetHalfImage,
+  ) {
     return SizedBox(
       height: 120,
       width: double.infinity,
@@ -68,7 +72,7 @@ class _ThreeCarouselsState extends State<ThreeCarousels> {
             padding: const EdgeInsets.symmetric(horizontal: 6),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
+              child: Image.asset(
                 images[realIndex],
                 width: imageWidth,
                 height: 120,

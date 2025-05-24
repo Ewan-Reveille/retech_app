@@ -46,6 +46,7 @@ dependencies:
   flutter_json: ^0.0.4
   flutter_stripe: ^11.5.0
   image_picker: ^1.1.2
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -73,18 +74,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/logo.svg
-    - assets/images/login/image1.png
-    - assets/images/login/image2.png
-    - assets/images/login/image3.png
-    - assets/images/login/image4.png
-    - assets/images/login/image5.png
-    - assets/images/login/image6.png
-    - assets/images/login/image7.png
-    - assets/images/login/image8.png
-    - assets/images/login/image9.png
-    - assets/images/login/image10.png
-    - assets/images/login/image11.png
-    - assets/images/login/background.png
+    - assets/images/login/
 
   #   - images/a_dot_ham.jpeg
 

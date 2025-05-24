@@ -83,9 +83,13 @@ class _SignUpPageState extends State<SignUpPage> {
     if (response.statusCode == 200 || response.statusCode == 201) {
       Navigator.of(context).pushReplacementNamed('/homepage');
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Erreur lors de la création du compte, veuillez réessayer.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Erreur lors de la création du compte, veuillez réessayer.",
+          ),
+        ),
+      );
     }
   }
 
@@ -260,6 +264,16 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ],
                   ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16, // Adjust this value based on your design
+              left: 16,
+              child: SafeArea(
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ),
             ),

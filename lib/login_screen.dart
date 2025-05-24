@@ -119,27 +119,27 @@ class LoginScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Google & Apple buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SignInButton(
-                              Buttons.Google,
-                              text: 'Google',
-                              onPressed: _signInWithGoogle,
-                            ),
-                            const SizedBox(width: 16),
-                            SignInButton(
-                              Buttons.Apple,
-                              onPressed: () async {
-                                final supabase = Supabase.instance.client;
-                                await supabase.auth.signInWithOAuth(
-                                  OAuthProvider.apple,
-                                );
-                              },
-                            ),
-                          ],
-                        ),
+                        // // Google & Apple buttons
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.center,
+                        //   children: [
+                        //     SignInButton(
+                        //       Buttons.Google,
+                        //       text: 'Google',
+                        //       onPressed: _signInWithGoogle,
+                        //     ),
+                        //     const SizedBox(width: 16),
+                        //     SignInButton(
+                        //       Buttons.Apple,
+                        //       onPressed: () async {
+                        //         final supabase = Supabase.instance.client;
+                        //         await supabase.auth.signInWithOAuth(
+                        //           OAuthProvider.apple,
+                        //         );
+                        //       },
+                        //     ),
+                        //   ],
+                        // ),
 
                         const SizedBox(height: 32),
                       ],
