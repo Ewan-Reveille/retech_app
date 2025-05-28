@@ -12,34 +12,56 @@ class HomePage extends StatefulWidget {
 
 class Product {
   final String id;
-  // final int id;
+  final List<String> imageUrls;
   final String title;
-  final List<ProductImage> images;
-  final double price;
-  final String description;
   final String category;
+  final String description;
+  final double price;
+  final String condition;
+  final String sellerId;
 
   Product({
     required this.id,
+    required this.imageUrls,
     required this.title,
-    required this.images,
-    required this.price,
-    required this.description,
     required this.category,
+    required this.description,
+    required this.price,
+    required this.condition,
+    required this.sellerId,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    const baseUrl = 'http://185.98.136.156:8080/';
+    
+    // Handle category - it could be String or Map
+    dynamic categoryValue = json['category'];
+    String category = '';
+    if (categoryValue is String) {
+      category = categoryValue;
+    } else if (categoryValue is Map) {
+      category = categoryValue['name']?.toString() ?? 'Sans catégorie';
+    }
+
+    // Handle images safely
+    final imagesJson = json['images'] as List<dynamic>? ?? [];
+    final imageUrls = imagesJson
+        .map<String?>((img) {
+          final url = img['ImageURL'] as String?;
+          return url != null ? baseUrl + url : null;
+        })
+        .whereType<String>() // Remove nulls
+        .toList();
+
     return Product(
-      id: json['ID'] as String,
-      // id: json['id'] as int,
-      title: json['title'],
-      images:
-          (json['images'] as List<dynamic>)
-              .map((imgJson) => ProductImage.fromJson(imgJson))
-              .toList(), // <-- Parse des images
-      price: (json['price'] as num).toDouble(),
-      description: json['description'] as String? ?? '',
-      category: json['category'] as String? ?? '',
+      id: json['ID']?.toString() ?? '',
+      imageUrls: imageUrls,
+      title: json['title']?.toString() ?? 'Titre inconnu',
+      category: category,
+      description: json['description']?.toString() ?? '',
+      price: (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0,
+      condition: json['condition']?.toString() ?? 'Inconnu',
+      sellerId: json['seller_id']?.toString() ?? '',
     );
   }
 }
@@ -262,8 +284,8 @@ class _HomePageState extends State<HomePage> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    product.images.isNotEmpty 
-                      ? product.images[0].imageUrl 
+                    product.imageUrls.isNotEmpty 
+                      ? product.imageUrls[0] 
                       : 'https://via.placeholder.com/150',
 
                     fit:

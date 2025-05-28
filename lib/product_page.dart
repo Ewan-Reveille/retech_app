@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+// import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_stripe/flutter_stripe.dart';
 
@@ -11,8 +11,8 @@ class Product {
   final String category;
   final String description;
   final double price;
-  final double rating;
-  final int reviewCount;
+  // final double rating;
+  // final int reviewCount;
 
   Product({
     required this.imageUrls,
@@ -20,12 +20,13 @@ class Product {
     required this.category,
     required this.description,
     required this.price,
-    required this.rating,
-    required this.reviewCount,
+    // required this.rating,
+    // required this.reviewCount,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
     debugPrint('🔍 RAW PRODUCT JSON ➞ $json');
+
     final imagesJson = json['images'] as List<dynamic>?;
     final imageField = json['image'] is String ? json['image'] as String : null;
     final imageUrls =
@@ -38,14 +39,15 @@ class Product {
     final description = json['description']?.toString() ?? '';
     final price =
         (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0;
+    debugPrint('🖼️ Image URLs: $imageUrls');
 
-    final ratingMap = json['rating'] is Map ? json['rating'] as Map : {};
-    final rating =
-        (ratingMap['rate'] is num)
-            ? (ratingMap['rate'] as num).toDouble()
-            : 0.0;
-    final reviewCount =
-        (ratingMap['count'] is num) ? (ratingMap['count'] as num).toInt() : 0;
+    // final ratingMap = json['rating'] is Map ? json['rating'] as Map : {};
+    // final rating =
+    //     (ratingMap['rate'] is num)
+    //         ? (ratingMap['rate'] as num).toDouble()
+    //         : 0.0;
+    // final reviewCount =
+    //     (ratingMap['count'] is num) ? (ratingMap['count'] as num).toInt() : 0;
 
     return Product(
       imageUrls: imageUrls,
@@ -53,26 +55,26 @@ class Product {
       category: category,
       description: description,
       price: price,
-      rating: rating,
-      reviewCount: reviewCount,
+      // rating: rating,
+      // reviewCount: reviewCount,
     );
   }
 }
 
 Future<Product> fetchProductById(String id) async {
-  if (id.isEmpty) {
-    throw Exception('ID de produit vide');
-  }
-  int? numericId = int.tryParse(id);
-  final usedId = numericId ?? 1;
+  final url = 'http://185.98.136.156:8080/products/$id';
 
-  http.Response res = await http.get(
-    Uri.parse('https://fakestoreapi.com/products/$usedId'),
+  final response = await http.get(
+    Uri.parse('http://185.98.136.156:8080/products/$id'),
   );
-  if (res.statusCode != 200) {
-    res = await http.get(Uri.parse('https://fakestoreapi.com/products/1'));
+  debugPrint('🌐 Fetching: $url');
+  
+  if (response.statusCode != 200) {
+    debugPrint('📄 Response body: ${response.body}');
+    throw Exception('Failed to load product: ${response.statusCode}');
   }
-  return Product.fromJson(json.decode(res.body));
+  
+  return Product.fromJson(json.decode(response.body));
 }
 
 Future<void> _handleStripePayment(BuildContext context, Product product) async {
@@ -152,6 +154,8 @@ class _ProductPageState extends State<ProductPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
+            debugPrint('Product fetch error: ${snap.error}');
+            debugPrint('Stack trace: ${snap.stackTrace}');
             return Center(child: Text('Erreur : ${snap.error}'));
           }
           final product = snap.data!;
@@ -249,17 +253,17 @@ class _ProductPageState extends State<ProductPage> {
                               ),
                             ),
                             const SizedBox(width: 16),
-                            RatingBarIndicator(
-                              rating: product.rating,
-                              itemBuilder:
-                                  (_, __) => const Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
-                                  ),
-                              itemSize: 20,
-                            ),
-                            const SizedBox(width: 6),
-                            Text('${product.reviewCount} avis'),
+                            // RatingBarIndicator(
+                            //   rating: product.rating,
+                            //   itemBuilder:
+                            //       (_, __) => const Icon(
+                            //         Icons.star,
+                            //         color: Colors.amber,
+                            //       ),
+                            //   itemSize: 20,
+                            // ),
+                            // const SizedBox(width: 6),
+                            // Text('${product.reviewCount} avis'),
                           ],
                         ),
                         const SizedBox(height: 16),
