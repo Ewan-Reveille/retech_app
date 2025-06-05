@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 class Product {
+  final String id;
   final List<String> imageUrls;
   final String title;
   final String category;
@@ -15,6 +16,7 @@ class Product {
   // final int reviewCount;
 
   Product({
+    required this.id,
     required this.imageUrls,
     required this.title,
     required this.category,
@@ -25,14 +27,19 @@ class Product {
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    const baseUrl = 'http://185.98.136.156:8080/';
     debugPrint('🔍 RAW PRODUCT JSON ➞ $json');
 
-    final imagesJson = json['images'] as List<dynamic>?;
-    final imageField = json['image'] is String ? json['image'] as String : null;
-    final imageUrls =
-        imagesJson != null
-            ? imagesJson.map((e) => e as String).toList()
-            : (imageField != null ? [imageField] : <String>[]);
+    final imagesJson = json['images'] as List<dynamic>? ?? [];
+    final imageUrls = imagesJson
+        .map<String?>((img) {
+          // img is a Map<String, dynamic>
+          final partial = img['ImageURL'] as String?;
+          return partial != null ? baseUrl + partial : null;
+        })
+        .whereType<String>()  // drops any nulls
+        .toList();
+
 
     final title = json['title']?.toString() ?? 'Titre inconnu';
     final category = json['category']?.toString() ?? 'Sans catégorie';
@@ -48,8 +55,10 @@ class Product {
     //         : 0.0;
     // final reviewCount =
     //     (ratingMap['count'] is num) ? (ratingMap['count'] as num).toInt() : 0;
+    debugPrint('Images URLs in product card: $imageUrls');
 
     return Product(
+      id: json['ID']?.toString() ?? '',
       imageUrls: imageUrls,
       title: title,
       category: category,

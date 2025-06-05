@@ -50,9 +50,9 @@ class Product {
           final url = img['ImageURL'] as String?;
           return url != null ? baseUrl + url : null;
         })
-        .whereType<String>() // Remove nulls
+        .whereType<String>()
         .toList();
-
+    debugPrint('Images URLs: $imageUrls');
     return Product(
       id: json['ID']?.toString() ?? '',
       imageUrls: imageUrls,
