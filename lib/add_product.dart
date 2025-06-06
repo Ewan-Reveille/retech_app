@@ -26,6 +26,7 @@ class AddProductPage extends StatefulWidget {
 }
 
 class _AddProductPageState extends State<AddProductPage> {
+  bool _isSubmitting = false;
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
 
@@ -86,7 +87,10 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || _isSubmitting) return;
+
+    setState(() => _isSubmitting = true); // Activer l'état de chargement
+
 
     final uri = Uri.parse('http://185.98.136.156:8080/products');
     final request = http.MultipartRequest('POST', uri);
@@ -121,7 +125,8 @@ class _AddProductPageState extends State<AddProductPage> {
       ),
     );
     if (success) Navigator.of(context).pop();
-  }
+    if (mounted) setState(() => _isSubmitting = false);
+  } 
 
   @override
   Widget build(BuildContext context) {

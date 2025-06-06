@@ -29,6 +29,9 @@
               android:resource="@style/NormalTheme"
               />
               <meta-data
+        android:name="com.google.android.gms.wallet.api.enabled"
+        android:value="true" />
+              <meta-data
                 android:name="com.google.android.gms.auth.api.Auth.GOOGLE_SIGN_IN_CLIENT_ID"
                 android:value="564913474567-qouq43cifimbc6jvlj7407967d2p0tbv.apps.googleusercontent.com" />
             <intent-filter>

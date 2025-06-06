@@ -31,18 +31,18 @@ class Product {
     debugPrint('🔍 RAW PRODUCT JSON ➞ $json');
 
     final imagesJson = json['images'] as List<dynamic>? ?? [];
-    final imageUrls = imagesJson
-        .map<String?>((img) {
-          // img is a Map<String, dynamic>
-          final partial = img['ImageURL'] as String?;
-          return partial != null ? baseUrl + partial : null;
-        })
-        .whereType<String>()  // drops any nulls
-        .toList();
-
+    final imageUrls =
+        imagesJson
+            .map<String?>((img) {
+              // img is a Map<String, dynamic>
+              final partial = img['ImageURL'] as String?;
+              return partial != null ? baseUrl + partial : null;
+            })
+            .whereType<String>() // drops any nulls
+            .toList();
 
     final title = json['title']?.toString() ?? 'Titre inconnu';
-    final category = json['category']?.toString() ?? 'Sans catégorie';
+    final category = '';
     final description = json['description']?.toString() ?? '';
     final price =
         (json['price'] is num) ? (json['price'] as num).toDouble() : 0.0;
@@ -77,12 +77,12 @@ Future<Product> fetchProductById(String id) async {
     Uri.parse('http://185.98.136.156:8080/products/$id'),
   );
   debugPrint('🌐 Fetching: $url');
-  
+
   if (response.statusCode != 200) {
     debugPrint('📄 Response body: ${response.body}');
     throw Exception('Failed to load product: ${response.statusCode}');
   }
-  
+
   return Product.fromJson(json.decode(response.body));
 }
 
@@ -90,36 +90,44 @@ Future<void> _handleStripePayment(BuildContext context, Product product) async {
   try {
     // 1. Create payment intent through your backend
     final response = await http.post(
-      Uri.parse('your-backend-url/create-payment-intent'),
-      body: {
-        'amount': (product.price * 100).toInt().toString(),
-        'currency': 'eur',
-      },
+      Uri.parse('http://185.98.136.156:8080/create-payment-intent'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'productId': product.id}),
     );
 
     // 2. Parse response
     final clientSecret = json.decode(response.body)['clientSecret'];
-    
+
     // 3. Initialize Stripe payment sheet
-    await Stripe.instance.initPaymentSheet(
-      paymentSheetParameters: SetupPaymentSheetParameters(
-        paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: 'Your Store',
-      ),
-    );
-    
+    try {
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: 'Your Store',
+        ),
+      );
+      await Stripe.instance.presentPaymentSheet();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Payment successful!')));
+    } on StripeException catch (e) {
+      // Handle specific Stripe errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Stripe Error: ${e.error.localizedMessage}')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+
     // 4. Display payment interface
-    await Stripe.instance.presentPaymentSheet();
-    
+
     // 5. Handle success
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Payment successful!')),
-    );
-    
   } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Payment failed: $e')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Payment failed: $e')));
   }
 }
 
